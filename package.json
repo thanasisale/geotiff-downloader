@@ -17,9 +17,8 @@
       "node16-macos-x64",
       "node16-win-x64"
     ],
-    "outputPath": "executables",
-    "bytecode": false,
-    "compress": "GZip"
+    "compress": "GZip",
+    "public": true
   },
   "keywords": [
     "geotiff",

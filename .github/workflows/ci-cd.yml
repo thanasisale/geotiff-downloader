@@ -4,7 +4,7 @@ on:
   push:
     branches: [main, master]
     tags:
-      - 'v*'  # Push events to matching v*, i.e. v1.0, v20.15.10
+      - 'v*' # Push events to matching v*, i.e. v1.0, v20.15.10
   pull_request:
     branches: [main, master]
   release:
@@ -25,13 +25,13 @@ jobs:
         env:
           GITHUB_CONTEXT: ${{ toJson(github) }}
         run: echo "$GITHUB_CONTEXT"
-      
+
       - name: Print GitHub ref
         run: |
           echo "github.ref is: ${{ github.ref }}"
           echo "github.ref_name is: ${{ github.ref_name }}"
           echo "startsWith check: ${{ startsWith(github.ref, 'refs/tags/v') }}"
-          
+
   build:
     needs: debug
     runs-on: ubuntu-latest
@@ -71,7 +71,6 @@ jobs:
       (startsWith(github.ref, 'refs/tags/v')) ||
       (github.event_name == 'workflow_dispatch' && github.event.inputs.tag != '')
     runs-on: ubuntu-latest
-
     steps:
       - uses: actions/checkout@v4
         with:
@@ -99,7 +98,7 @@ jobs:
       - name: Create executables
         run: |
           mkdir -p executables
-          pkg . --out-path=executables --no-bytecode --targets=node16-linux-x64,node16-macos-x64,node16-win-x64
+          pkg . --out-path=executables --public --targets=node16-linux-x64,node16-macos-x64,node16-win-x64
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v1
