@@ -50,12 +50,15 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Use Node.js
         uses: actions/setup-node@v4
         with:
           node-version: '20.x'
           registry-url: 'https://registry.npmjs.org/'
+          always-auth: true
 
       - name: Download build artifacts
         uses: actions/download-artifact@v4
@@ -84,9 +87,6 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Publish to npm
-        run: |
-          echo "Registry URL is set to: $(npm config get registry)"
-          npm whoami
-          npm publish --verbose
+        run: npm publish
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
