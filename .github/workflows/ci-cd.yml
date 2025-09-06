@@ -99,7 +99,7 @@ jobs:
       - name: Create executables
         run: |
           mkdir -p executables
-          pkg . --out-path=executables --targets=node16-linux-x64,node16-macos-x64,node16-win-x64
+          pkg . --out-path=executables --no-bytecode --targets=node16-linux-x64,node16-macos-x64,node16-win-x64
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v1
