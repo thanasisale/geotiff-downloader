@@ -1,5 +1,5 @@
 {
-  "name": "geotiff-downloader",
+  "name": "@thanasisale/geotiff-downloader",
   "version": "1.0.0",
   "main": "dist/index.js",
   "bin": {
