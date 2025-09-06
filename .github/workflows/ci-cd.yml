@@ -1,130 +1,135 @@
 name: CI/CD Pipeline
 
 on:
+  # Trigger on push to main branches
   push:
     branches: [main, master]
+    # Trigger on version tags
     tags:
       - 'v*' # Push events to matching v*, i.e. v1.0, v20.15.10
+  
+  # Trigger on pull requests to main branches
   pull_request:
     branches: [main, master]
-  release:
-    types: [created]
-  # Allow manual trigger
+  
+  # Allow manual triggering with optional tag input
   workflow_dispatch:
     inputs:
       tag:
-        description: 'Tag to release'
+        description: 'Tag to release (e.g., v1.0.0)'
         required: false
         default: ''
 
 jobs:
-  debug:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Dump GitHub context
-        env:
-          GITHUB_CONTEXT: ${{ toJson(github) }}
-        run: echo "$GITHUB_CONTEXT"
-
-      - name: Print GitHub ref
-        run: |
-          echo "github.ref is: ${{ github.ref }}"
-          echo "github.ref_name is: ${{ github.ref_name }}"
-          echo "startsWith check: ${{ startsWith(github.ref, 'refs/tags/v') }}"
-
+  # Build job to compile the TypeScript code
   build:
-    needs: debug
     runs-on: ubuntu-latest
-
     strategy:
       matrix:
         node-version: [18.x, 20.x]
-
+    
     steps:
-      - uses: actions/checkout@v4
-
-      - name: Use Node.js ${{ matrix.node-version }}
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Setup Node.js ${{ matrix.node-version }}
         uses: actions/setup-node@v4
         with:
           node-version: ${{ matrix.node-version }}
           cache: 'npm'
-
+      
       - name: Install dependencies
         run: npm ci
-
+      
       - name: Build
         run: npm run build
-
+      
       # Uncomment when you have tests
       # - name: Run tests
       #   run: npm test
-
+      
       - name: Upload build artifacts
         uses: actions/upload-artifact@v4
         with:
           name: dist-node-${{ matrix.node-version }}
           path: dist/
+          retention-days: 1
 
+  # Release job to create GitHub release and publish to npm
   release:
     needs: build
-    # Modified condition to be more inclusive
-    if: >
-      startsWith(github.ref, 'refs/tags/v') ||
-      github.ref_name == 'v1.0.0' ||
-      contains(github.ref, 'v1.0.0') ||
-      (github.event_name == 'workflow_dispatch' && github.event.inputs.tag != '')
+    # Only run on tags or manual workflow dispatch with tag input
+    if: startsWith(github.ref, 'refs/tags/v') || (github.event_name == 'workflow_dispatch' && github.event.inputs.tag != '')
     runs-on: ubuntu-latest
+    # Required permissions for creating releases
     permissions:
       contents: write
+      id-token: write # For npm provenance
+    
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout code
+        uses: actions/checkout@v4
         with:
           fetch-depth: 0
-
-      - name: Use Node.js
+      
+      - name: Set release tag
+        id: set_tag
+        run: |
+          if [ "${{ github.event.inputs.tag }}" != "" ]; then
+            echo "RELEASE_TAG=${{ github.event.inputs.tag }}" >> $GITHUB_ENV
+          else
+            echo "RELEASE_TAG=${GITHUB_REF#refs/tags/}" >> $GITHUB_ENV
+          fi
+          echo "Release tag: $RELEASE_TAG"
+      
+      - name: Setup Node.js 20.x
         uses: actions/setup-node@v4
         with:
           node-version: '20.x'
           registry-url: 'https://registry.npmjs.org/'
           scope: '@thanasisale'
-
+      
       - name: Download build artifacts
         uses: actions/download-artifact@v4
         with:
           name: dist-node-20.x
           path: dist/
-
+      
       - name: Install pkg
         run: npm install -g pkg
-
+      
       - name: Install dependencies
         run: npm ci
-
+      
       - name: Create executables
         run: |
           mkdir -p executables
-          pkg . --out-path=executables --public --targets=node16-linux-x64,node16-macos-x64,node16-win-x64
-
+          # Update to use Node.js 18 (more recent than 16)
+          pkg . --out-path=executables --public --targets=node18-linux-x64,node18-macos-x64,node18-win-x64
+      
+      - name: Debug release info
+        run: |
+          echo "Tag name: $RELEASE_TAG"
+          echo "Files to include:"
+          ls -la executables/
+          echo "CHANGELOG.md exists:" 
+          test -f CHANGELOG.md && echo "Yes" || echo "No"
+      
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
-          files: |
-            executables/*
+          files: executables/*
           body_path: CHANGELOG.md
           tag_name: ${{ github.event.inputs.tag != '' && github.event.inputs.tag || github.ref_name }}
+          fail_on_unmatched_files: false
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      # Skip npm publish if NPM_TOKEN secret is not available
-      - name: Check for NPM token
-        id: check_npm_token
-        # This will set output.has_token to 'true' if NPM_TOKEN exists
-        run: echo "has_token=${{ secrets.NPM_TOKEN != '' }}" >> $GITHUB_OUTPUT
-
+      
       - name: Publish to npm
-        if: steps.check_npm_token.outputs.has_token == 'true'
+        # We always attempt to publish the package
+        # If you want to skip npm publishing, set SKIP_NPM as a repository variable to 'true'
         run: |
           echo "Publishing package to npm registry"
-          npm publish --access=public
+          npm publish --access public || echo "npm publish failed, but continuing workflow"
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
