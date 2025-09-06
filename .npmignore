@@ -1,0 +1,66 @@
+# Source code
+src/
+
+# Tests
+test/
+tests/
+__tests__/
+
+# Configuration files
+tsconfig.json
+tslint.json
+.eslintrc*
+.prettier*
+
+# Git & GitHub files
+.git/
+.github/
+.gitignore
+.gitattributes
+
+# Editor files
+.vscode/
+.idea/
+*.sublime-*
+.project
+.classpath
+.c9/
+*.launch
+.settings/
+*.code-workspace
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Build artifacts
+executables/
+coverage/
+.nyc_output/
+.DS_Store
+
+# Docs and examples that aren't needed in the package
+docs/
+examples/
+CONTRIBUTING.md
+
+# Build scripts and release files
+scripts/
+RELEASE.md
+.travis.yml
+appveyor.yml
+*.yml
+*.yaml
+
+# Temporary files
+*.tmp
+*.temp
+.tmp/
+.temp/
+.cache/
+
+# Environment files
+.env*
