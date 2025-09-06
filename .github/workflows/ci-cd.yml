@@ -45,8 +45,7 @@ jobs:
 
   release:
     needs: build
-    # Removing condition temporarily to ensure job runs
-    # if: startsWith(github.ref, 'refs/tags/v')
+    if: startsWith(github.ref, 'refs/tags/v')
     runs-on: ubuntu-latest
 
     steps:
@@ -84,6 +83,7 @@ jobs:
           files: |
             executables/*
           body_path: CHANGELOG.md
+          tag_name: ${{ github.ref_name }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
