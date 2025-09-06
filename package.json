@@ -47,6 +47,9 @@
     "url": "https://github.com/thanasisale/geotiff-downloader/issues"
   },
   "homepage": "https://github.com/thanasisale/geotiff-downloader#readme",
+  "publishConfig": {
+    "access": "public"
+  },
   "dependencies": {
     "axios": "^1.11.0",
     "cli-progress": "^3.12.0",
